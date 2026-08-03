@@ -81,7 +81,7 @@ export default function Home() {
     <div className={`${highContrast ? "high-contrast" : ""} ${largeText ? "large-text" : ""}`}>
       <a className="skip-link" href="#main">Skip to main content</a>
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="Student Success Center home"><span className="brand-mark">S</span><span>Student Success<br/><b>Center</b></span></a>
+        <a className="brand" href="#top" aria-label="Future Waymark home"><span className="brand-mark">F</span><span>Future<br/><b>Waymark</b></span></a>
         <nav className={menuOpen ? "open" : ""} aria-label="Main navigation">
           <a className="active" href="#explore">Explore</a><a href="#centers">Learning centers</a><a href="#progress">My progress</a><a href="#families">For families</a>
         </nav>
@@ -97,8 +97,8 @@ export default function Home() {
         <section className="hero" id="top">
           <div className="hero-copy">
             <div className="kicker">WELCOME BACK, MAYA <span>✦</span></div>
-            <h1>Your senior year,<br/><em>one clear step</em> at a time.</h1>
-            <p>Explore trusted guidance, build your plan, and keep moving toward what’s next—at your own pace.</p>
+            <h1>Find your way<br/><em>forward.</em></h1>
+            <p>Trusted guidance for senior year and every path that comes next—college, career, trades, service, and beyond.</p>
             <div className="search-wrap">
               <span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search guides, videos, templates, and more…" aria-label="Search all resources" />
               <kbd>⌘ K</kbd>
@@ -146,7 +146,7 @@ export default function Home() {
         <section className="support-banner" id="families"><div><span className="support-icon">♡</span><div><span className="kicker dark">A NOTE FOR STUDENTS</span><h2>Guidance for the journey—not a substitute for official advice.</h2><p>Use these resources to learn, prepare, and ask better questions. Always confirm requirements and deadlines with colleges, testing organizations, and your school counselor.</p></div></div><a href="#explore">Find trusted sources →</a></section>
       </main>
 
-      <footer><div className="brand footer-brand"><span className="brand-mark">S</span><span>Student Success<br/><b>Center</b></span></div><p>Clear guidance for what comes next.</p><nav aria-label="Footer navigation"><a href="#explore">Resource library</a><a href="#centers">Learning centers</a><a href="#families">Accessibility</a><a href="#families">For parents</a></nav><small>Resources are educational and reviewed regularly. Verify official requirements with the appropriate organization.</small></footer>
+      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span>Future<br/><b>Waymark</b></span></div><p>Guidance for every path forward.</p><nav aria-label="Footer navigation"><a href="#explore">Resource library</a><a href="#centers">Learning centers</a><a href="#families">Accessibility</a><a href="#families">For parents</a></nav><small>Resources are educational and reviewed regularly. Verify official requirements with the appropriate organization.</small></footer>
     </div>
   );
 }
