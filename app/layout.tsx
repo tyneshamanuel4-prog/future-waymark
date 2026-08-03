@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: "Future Waymark | Guidance for Every Path Forward",
   description: "Trusted guidance, practical learning centers, and progress tools for senior year and every path that comes next.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
-  openGraph: { title: "Future Waymark", description: "Guidance for every path forward.", images: [{ url: "/og-future-waymark.png", width: 1733, height: 909 }] },
-  twitter: { card: "summary_large_image", title: "Future Waymark", description: "Guidance for every path forward.", images: ["/og-future-waymark.png"] },
+  openGraph: { title: "Future Waymark", description: "Guidance for every path forward.", images: [{ url: "https://student-success-center-senior-year.tyneshamanuel4.chatgpt.site/og-future-waymark.png", width: 1733, height: 909 }] },
+  twitter: { card: "summary_large_image", title: "Future Waymark", description: "Guidance for every path forward.", images: ["https://student-success-center-senior-year.tyneshamanuel4.chatgpt.site/og-future-waymark.png"] },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
