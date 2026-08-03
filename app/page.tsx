@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Resource = {
   id: number;
@@ -15,7 +15,7 @@ type Resource = {
   featured?: boolean;
 };
 
-const resources: Resource[] = [
+const fallbackResources: Resource[] = [
   { id: 1, type: "Guide", title: "Build a college list that fits you", category: "College Applications", detail: "Balance reach, target, and likely schools around the things that matter to you.", time: "7 min read", level: "Start here", icon: "⌂", accent: "sage", featured: true },
   { id: 2, type: "Video", title: "FAFSA: what families should know", category: "FAFSA & Financial Aid", detail: "A plain-language walkthrough for students and supporters.", time: "12 min", level: "Beginner", icon: "▶", accent: "gold", featured: true },
   { id: 3, type: "Template", title: "Personal story map", category: "Essay Writing", detail: "Connect moments, choices, and growth before drafting your essay.", time: "15 min", level: "All levels", icon: "✎", accent: "coral", featured: true },
@@ -57,6 +57,7 @@ function ResourceCard({ resource, saved, onSave }: { resource: Resource; saved: 
 }
 
 export default function Home() {
+  const [resources, setResources] = useState<Resource[]>(fallbackResources);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All resources");
   const [saved, setSaved] = useState<number[]>([3]);
@@ -64,6 +65,33 @@ export default function Home() {
   const [largeText, setLargeText] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://atzciddycobjyuylutcm.supabase.co";
+    const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_3LDBiKdSzxf1vpVtxmP0mw_aofGkRlj";
+    const controller = new AbortController();
+
+    fetch(`${supabaseUrl}/rest/v1/resources?select=id,type,title,category,description,duration,skill_level,icon,accent,is_featured&order=id`, {
+      headers: { apikey: publishableKey },
+      signal: controller.signal,
+    })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Resource catalog unavailable")))
+      .then((rows) => setResources(rows.map((row: Record<string, unknown>) => ({
+        id: Number(row.id),
+        type: row.type as Resource["type"],
+        title: String(row.title),
+        category: String(row.category),
+        detail: String(row.description),
+        time: String(row.duration),
+        level: String(row.skill_level),
+        icon: String(row.icon),
+        accent: String(row.accent),
+        featured: Boolean(row.is_featured),
+      }))))
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
 
   const filtered = useMemo(() => {
     const normalized = query.toLowerCase();

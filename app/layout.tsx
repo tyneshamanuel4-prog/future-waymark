@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://future-waymark.vercel.app"),
   title: "Future Waymark | Guidance for Every Path Forward",
   description: "Trusted guidance, practical learning centers, and progress tools for senior year and every path that comes next.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
