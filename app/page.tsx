@@ -1,180 +1,70 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 
-type Resource = {
-  id: number;
-  type: "Guide" | "Video" | "Template" | "Checklist";
-  title: string;
-  category: string;
-  detail: string;
-  time: string;
-  level: string;
-  icon: string;
-  accent: string;
-  featured?: boolean;
-};
+type Resource = { id:number; type:"Guide"|"Video"|"Template"|"Checklist"; title:string; category:string; detail:string; time:string; level:string; icon:string; accent:string };
+type Profile = { id:string; first_name:string; last_name:string; grade_level:string; graduation_year:number; pathway:string; interests:string[]; goals:string[]; target_schools:string[]; onboarding_complete:boolean };
+type Step = { id:string; title:string; due_date:string|null; category:string; completed:boolean; position:number };
 
 const fallbackResources: Resource[] = [
-  { id: 1, type: "Guide", title: "Build a college list that fits you", category: "College Applications", detail: "Balance reach, target, and likely schools around the things that matter to you.", time: "7 min read", level: "Start here", icon: "⌂", accent: "sage", featured: true },
-  { id: 2, type: "Video", title: "FAFSA: what families should know", category: "FAFSA & Financial Aid", detail: "A plain-language walkthrough for students and supporters.", time: "12 min", level: "Beginner", icon: "▶", accent: "gold", featured: true },
-  { id: 3, type: "Template", title: "Personal story map", category: "Essay Writing", detail: "Connect moments, choices, and growth before drafting your essay.", time: "15 min", level: "All levels", icon: "✎", accent: "coral", featured: true },
-  { id: 4, type: "Checklist", title: "Digital SAT test-day checklist", category: "SAT Preparation", detail: "Know what to bring, what to leave home, and how to arrive ready.", time: "5 min", level: "Test day", icon: "✓", accent: "blue" },
-  { id: 5, type: "Guide", title: "Ask for a strong recommendation", category: "Recommendation Letters", detail: "Choose a recommender, ask thoughtfully, and share useful context.", time: "6 min", level: "Start here", icon: "✦", accent: "violet" },
-  { id: 6, type: "Video", title: "Answer interview questions with STAR", category: "Interview Preparation", detail: "Turn your experiences into clear, memorable answers.", time: "9 min", level: "Practice", icon: "◉", accent: "rose" },
-  { id: 7, type: "Template", title: "High school senior resume", category: "Resume Building", detail: "Organize classes, leadership, service, work, and skills.", time: "20 min", level: "All levels", icon: "▤", accent: "mint" },
-  { id: 8, type: "Guide", title: "Compare college financial aid offers", category: "Scholarships", detail: "Look beyond the headline number to understand your real cost.", time: "10 min", level: "Intermediate", icon: "$", accent: "gold" },
+  {id:1,type:"Guide",title:"Build a college list that fits you",category:"College Applications",detail:"Balance reach, target, and likely schools around what matters to you.",time:"7 min read",level:"Start here",icon:"01",accent:"sage"},
+  {id:2,type:"Video",title:"FAFSA: what families should know",category:"FAFSA & Financial Aid",detail:"A plain-language walkthrough for students and supporters.",time:"12 min",level:"Beginner",icon:"02",accent:"gold"},
+  {id:3,type:"Template",title:"Personal story map",category:"Essay Writing",detail:"Connect moments, choices, and growth before drafting your essay.",time:"15 min",level:"All levels",icon:"03",accent:"coral"},
+  {id:4,type:"Checklist",title:"Digital SAT test-day checklist",category:"SAT Preparation",detail:"Know what to bring and how to arrive ready.",time:"5 min",level:"Test day",icon:"04",accent:"blue"},
+  {id:5,type:"Guide",title:"Ask for a strong recommendation",category:"Recommendation Letters",detail:"Choose a recommender, ask thoughtfully, and share useful context.",time:"6 min",level:"Start here",icon:"05",accent:"violet"},
+  {id:6,type:"Video",title:"Answer interview questions with STAR",category:"Interview Preparation",detail:"Turn your experiences into clear, memorable answers.",time:"9 min",level:"Practice",icon:"06",accent:"rose"},
 ];
 
-const categoryGroups = [
-  { title: "Apply & pay", icon: "↗", items: ["College Applications", "Scholarships", "FAFSA & Financial Aid", "Recommendation Letters"] },
-  { title: "Test prep", icon: "◎", items: ["SAT Preparation", "ACT Preparation", "AP Exams", "Study Skills"] },
-  { title: "Tell your story", icon: "✎", items: ["Essay Writing", "Personal Statements", "Supplemental Essays", "Resume Building"] },
-  { title: "Plan what’s next", icon: "⌁", items: ["Career Planning", "Trade School", "Community College", "Apprenticeships"] },
-  { title: "Stay well", icon: "♡", items: ["Mental Wellness", "Stress Management", "Time Management", "Campus Life"] },
-  { title: "For supporters", icon: "◌", items: ["Parent Resources", "College Visits", "Graduation Planning", "Financial Aid"] },
-];
+const pathways = ["Four-year college","Community college","Trade school","Apprenticeship","Career or internship","Military service","Still exploring"];
+const interestOptions = ["Scholarships","Financial aid","SAT / ACT","Essay writing","Career planning","Resume building","Interview practice","Mental wellness"];
+const pathTemplates: Record<string,string[]> = {
+  "Four-year college":["Build a balanced college list","Request recommendation letters","Complete FAFSA","Draft your personal statement","Submit applications"],
+  "Community college":["Compare local programs","Review transfer pathways","Complete FAFSA","Apply for admission","Attend orientation"],
+  "Trade school":["Choose a skilled-trade pathway","Compare accredited programs","Review costs and aid","Apply to programs","Prepare for enrollment"],
+  "Apprenticeship":["Explore apprenticeship fields","Build a first resume","Gather references","Apply to opportunities","Practice for interviews"],
+  "Career or internship":["Identify career interests","Build your resume","Create a professional email","Apply to opportunities","Practice interviews"],
+  "Military service":["Explore service branches","Speak with trusted adults","Review eligibility and commitments","Prepare questions for recruiters","Compare education benefits"],
+  "Still exploring":["Complete a career-interest reflection","Compare college, trade, and work paths","Talk with a trusted advisor","Choose two paths to research","Set a next-step decision date"],
+};
 
-const centers = [
-  { title: "SAT Success Center", icon: "SAT", detail: "Study plans, score tracking, deadlines, and official practice resources.", progress: 62, tone: "forest" },
-  { title: "Essay Writing Center", icon: "Aa", detail: "Find your story, shape your draft, and keep your authentic voice.", progress: 35, tone: "orange" },
-  { title: "Interview Prep", icon: "◉", detail: "Practice with purpose for college, scholarship, and job interviews.", progress: 20, tone: "navy" },
-];
+const emptyProfile: Profile = {id:"",first_name:"",last_name:"",grade_level:"12",graduation_year:new Date().getFullYear(),pathway:"Still exploring",interests:[],goals:[],target_schools:[],onboarding_complete:false};
 
-function ResourceCard({ resource, saved, onSave }: { resource: Resource; saved: boolean; onSave: () => void }) {
-  return (
-    <article className="resource-card">
-      <div className={`resource-art ${resource.accent}`}><span>{resource.icon}</span><small>{resource.type}</small></div>
-      <div className="resource-body">
-        <div className="eyebrow">{resource.category}</div>
-        <h3>{resource.title}</h3>
-        <p>{resource.detail}</p>
-        <div className="resource-meta"><span>{resource.time}</span><span>•</span><span>{resource.level}</span></div>
-      </div>
-      <button className={`save-button ${saved ? "saved" : ""}`} aria-label={saved ? `Remove ${resource.title} from saved` : `Save ${resource.title}`} onClick={onSave}>{saved ? "♥" : "♡"}</button>
-    </article>
-  );
+function AuthPanel({close}:{close:()=>void}) {
+  const [mode,setMode]=useState<"signup"|"signin">("signup"); const [busy,setBusy]=useState(false); const [message,setMessage]=useState("");
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setMessage("");const fd=new FormData(e.currentTarget);const email=String(fd.get("email"));const password=String(fd.get("password"));
+    const result=mode==="signup"?await supabase.auth.signUp({email,password,options:{data:{first_name:String(fd.get("firstName")||"")},emailRedirectTo:window.location.origin}}):await supabase.auth.signInWithPassword({email,password});
+    setBusy(false);if(result.error){setMessage(result.error.message);return}if(mode==="signup"&&!result.data.session){setMessage("Check your email to confirm your account, then return here to sign in.");return}close();}
+  return <div className="modal-backdrop" role="presentation"><section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button className="close" onClick={close} aria-label="Close">×</button><span className="kicker dark">YOUR PRIVATE WORKSPACE</span><h2 id="auth-title">{mode==="signup"?"Create your student account":"Welcome back"}</h2><p>Your path, saved resources, and progress will follow you on any device.</p><form onSubmit={submit}>{mode==="signup"&&<label>First name<input name="firstName" required autoComplete="given-name"/></label>}<label>Email address<input name="email" type="email" required autoComplete="email"/></label><label>Password<input name="password" type="password" minLength={8} required autoComplete={mode==="signup"?"new-password":"current-password"}/></label><button className="primary" disabled={busy}>{busy?"Please wait…":mode==="signup"?"Create my account":"Sign in"}</button></form>{message&&<div className="form-message" role="status">{message}</div>}<button className="auth-switch" onClick={()=>{setMode(mode==="signup"?"signin":"signup");setMessage("")}}>{mode==="signup"?"Already have an account? Sign in":"New to Future Waymark? Create an account"}</button><small>Future Waymark provides educational support and does not replace official admissions, financial-aid, or counseling guidance.</small></section></div>;
 }
 
-export default function Home() {
-  const [resources, setResources] = useState<Resource[]>(fallbackResources);
-  const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All resources");
-  const [saved, setSaved] = useState<number[]>([3]);
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [showAll, setShowAll] = useState(false);
-
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://atzciddycobjyuylutcm.supabase.co";
-    const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_3LDBiKdSzxf1vpVtxmP0mw_aofGkRlj";
-    const controller = new AbortController();
-
-    fetch(`${supabaseUrl}/rest/v1/resources?select=id,type,title,category,description,duration,skill_level,icon,accent,is_featured&order=id`, {
-      headers: { apikey: publishableKey },
-      signal: controller.signal,
-    })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Resource catalog unavailable")))
-      .then((rows) => setResources(rows.map((row: Record<string, unknown>) => ({
-        id: Number(row.id),
-        type: row.type as Resource["type"],
-        title: String(row.title),
-        category: String(row.category),
-        detail: String(row.description),
-        time: String(row.duration),
-        level: String(row.skill_level),
-        icon: String(row.icon),
-        accent: String(row.accent),
-        featured: Boolean(row.is_featured),
-      }))))
-      .catch(() => undefined);
-
-    return () => controller.abort();
-  }, []);
-
-  const filtered = useMemo(() => {
-    const normalized = query.toLowerCase();
-    return resources.filter((item) => {
-      const matchesQuery = `${item.title} ${item.category} ${item.type} ${item.detail}`.toLowerCase().includes(normalized);
-      const matchesCategory = activeCategory === "All resources" || item.category === activeCategory;
-      return matchesQuery && matchesCategory;
-    });
-  }, [query, activeCategory]);
-
-  const toggleSaved = (id: number) => setSaved((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
-  const visibleResources = showAll || query || activeCategory !== "All resources" ? filtered : filtered.slice(0, 4);
-
-  return (
-    <div className={`${highContrast ? "high-contrast" : ""} ${largeText ? "large-text" : ""}`}>
-      <a className="skip-link" href="#main">Skip to main content</a>
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="Future Waymark home"><span className="brand-mark">F</span><span>Future<br/><b>Waymark</b></span></a>
-        <nav className={menuOpen ? "open" : ""} aria-label="Main navigation">
-          <a className="active" href="#explore">Explore</a><a href="#centers">Learning centers</a><a href="#progress">My progress</a><a href="#families">For families</a>
-        </nav>
-        <div className="header-actions">
-          <button className="icon-button" onClick={() => setHighContrast(!highContrast)} aria-label="Toggle high contrast">◐</button>
-          <button className="icon-button font-button" onClick={() => setLargeText(!largeText)} aria-label="Toggle larger text">Aa</button>
-          <button className="profile-button" aria-label="Open profile for Maya"><span>MS</span><b>Maya</b><i>⌄</i></button>
-          <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">☰</button>
-        </div>
-      </header>
-
-      <main id="main">
-        <section className="hero" id="top">
-          <div className="hero-copy">
-            <div className="kicker">WELCOME BACK, MAYA <span>✦</span></div>
-            <h1>Find your way<br/><em>forward.</em></h1>
-            <p>Trusted guidance for senior year and every path that comes next—college, career, trades, service, and beyond.</p>
-            <div className="search-wrap">
-              <span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search guides, videos, templates, and more…" aria-label="Search all resources" />
-              <kbd>⌘ K</kbd>
-            </div>
-            <div className="quick-links"><span>Popular:</span>{["FAFSA", "Essay ideas", "SAT plan", "Resume"].map((item) => <button key={item} onClick={() => setQuery(item)}>{item}</button>)}</div>
-          </div>
-          <div className="hero-planner" aria-label="Upcoming milestones">
-            <div className="tape tape-one"></div><div className="tape tape-two"></div>
-            <div className="planner-label">MY NEXT STEPS</div>
-            <div className="planner-date"><strong>OCT</strong><b>15</b></div>
-            <div className="planner-line"><span></span><div><b>FAFSA opens</b><small>Get your documents ready</small></div><button>→</button></div>
-            <div className="planner-line"><span className="orange-dot"></span><div><b>College list review</b><small>4 days left</small></div><button>→</button></div>
-            <div className="planner-note">Small steps add up.<br/><b>You’ve got this.</b> <span>↗</span></div>
-          </div>
-        </section>
-
-        <section className="progress-strip" id="progress">
-          <div><span className="progress-icon">✓</span><p><small>THIS WEEK</small><b>3 of 5 goals complete</b></p><div className="bar"><i style={{width:"60%"}}></i></div></div>
-          <div><span className="progress-icon book">▤</span><p><small>KEEP READING</small><b>Understanding your financial aid offer</b></p><button>Continue <span>→</span></button></div>
-          <div><span className="progress-icon flame">♨</span><p><small>STUDY STREAK</small><b>6 days</b></p><span className="streak">Best: 9</span></div>
-        </section>
-
-        <section className="section" id="explore">
-          <div className="section-heading"><div><span className="kicker dark">START WHERE YOU ARE</span><h2>Explore by topic</h2><p>Practical guidance for every part of your journey.</p></div><button className="text-link" onClick={() => {setActiveCategory("All resources"); document.getElementById("resources")?.scrollIntoView({behavior:"smooth"})}}>View all 26 categories →</button></div>
-          <div className="category-grid">
-            {categoryGroups.map((group) => <button className="category-card" key={group.title} onClick={() => {setActiveCategory(group.items[0]); document.getElementById("resources")?.scrollIntoView({behavior:"smooth"})}}><span className="category-icon">{group.icon}</span><h3>{group.title}</h3><ul>{group.items.map((item) => <li key={item}>{item}<span>→</span></li>)}</ul></button>)}
-          </div>
-        </section>
-
-        <section className="section cream-section" id="centers">
-          <div className="section-heading"><div><span className="kicker dark">GUIDED LEARNING</span><h2>Pick up where you left off</h2><p>Focused learning centers that turn big goals into doable steps.</p></div></div>
-          <div className="center-grid">
-            {centers.map((center) => <article className="center-card" key={center.title}><div className={`center-visual ${center.tone}`}><span>{center.icon}</span><i style={{width:`${center.progress}%`}}></i><small>{center.progress}% complete</small></div><div className="center-copy"><h3>{center.title}</h3><p>{center.detail}</p><button>Continue learning <span>→</span></button></div></article>)}
-          </div>
-          <div className="center-links"><button>ACT Success Center</button><button>Resume Builder</button><button>Study Skills Center</button><button>Parent Learning Center</button></div>
-        </section>
-
-        <section className="section" id="resources">
-          <div className="section-heading resource-heading"><div><span className="kicker dark">CURATED FOR YOU</span><h2>{query ? `Results for “${query}”` : activeCategory !== "All resources" ? activeCategory : "Recommended resources"}</h2><p>Reviewed, practical, and worth your time.</p></div><div className="filter-row"><select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} aria-label="Filter by category"><option>All resources</option>{Array.from(new Set(resources.map((r) => r.category))).map((category) => <option key={category}>{category}</option>)}</select><button onClick={() => {setQuery("");setActiveCategory("All resources")}}>Clear filters</button></div></div>
-          <div className="resource-grid">{visibleResources.map((resource) => <ResourceCard key={resource.id} resource={resource} saved={saved.includes(resource.id)} onSave={() => toggleSaved(resource.id)} />)}</div>
-          {visibleResources.length === 0 && <div className="empty-state"><span>⌕</span><h3>No exact matches yet</h3><p>Try a broader keyword or clear your category filter.</p><button onClick={() => {setQuery(""); setActiveCategory("All resources")}}>See all resources</button></div>}
-          {!showAll && !query && activeCategory === "All resources" && <button className="outline-button" onClick={() => setShowAll(true)}>Browse all resources <span>→</span></button>}
-        </section>
-
-        <section className="support-banner" id="families"><div><span className="support-icon">♡</span><div><span className="kicker dark">A NOTE FOR STUDENTS</span><h2>Guidance for the journey—not a substitute for official advice.</h2><p>Use these resources to learn, prepare, and ask better questions. Always confirm requirements and deadlines with colleges, testing organizations, and your school counselor.</p></div></div><a href="#explore">Find trusted sources →</a></section>
-      </main>
-
-      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span>Future<br/><b>Waymark</b></span></div><p>Guidance for every path forward.</p><nav aria-label="Footer navigation"><a href="#explore">Resource library</a><a href="#centers">Learning centers</a><a href="#families">Accessibility</a><a href="#families">For parents</a></nav><small>Resources are educational and reviewed regularly. Verify official requirements with the appropriate organization.</small></footer>
-    </div>
-  );
+function Onboarding({profile,onSaved}:{profile:Profile;onSaved:(p:Profile)=>void}){
+  const [draft,setDraft]=useState(profile);const [saving,setSaving]=useState(false);const [error,setError]=useState("");
+  function toggleInterest(value:string){setDraft(p=>({...p,interests:p.interests.includes(value)?p.interests.filter(x=>x!==value):[...p.interests,value]}))}
+  async function save(e:FormEvent){e.preventDefault();setSaving(true);setError("");const goals=pathTemplates[draft.pathway]??pathTemplates["Still exploring"];const payload={...draft,onboarding_complete:true,updated_at:new Date().toISOString()};
+    const {error:profileError}=await supabase.from("student_profiles").upsert(payload);if(profileError){setError(profileError.message);setSaving(false);return}
+    const {count}=await supabase.from("student_steps").select("id",{count:"exact",head:true});if(!count){const {error:stepsError}=await supabase.from("student_steps").insert(goals.map((title,i)=>({user_id:draft.id,title,category:draft.pathway,position:i+1})));if(stepsError){setError(stepsError.message);setSaving(false);return}}
+    setSaving(false);onSaved(payload as Profile)}
+  return <main className="onboarding"><div className="onboarding-intro"><span className="kicker">BUILD YOUR WAYMARK</span><h1>Your future is personal.<br/><em>Your plan should be too.</em></h1><p>Tell us where you are and what you’re considering. You can change every answer later.</p></div><form className="onboarding-card" onSubmit={save}><div className="step-label">STEP 1 OF 1 · ABOUT YOU</div><div className="two-col"><label>First name<input required value={draft.first_name} onChange={e=>setDraft({...draft,first_name:e.target.value})}/></label><label>Last name<input value={draft.last_name} onChange={e=>setDraft({...draft,last_name:e.target.value})}/></label></div><div className="two-col"><label>Current grade<select value={draft.grade_level} onChange={e=>setDraft({...draft,grade_level:e.target.value})}><option>9</option><option>10</option><option>11</option><option>12</option><option>Graduated</option></select></label><label>Graduation year<input type="number" min="2024" max="2035" value={draft.graduation_year} onChange={e=>setDraft({...draft,graduation_year:Number(e.target.value)})}/></label></div><label>What path are you considering?<select value={draft.pathway} onChange={e=>setDraft({...draft,pathway:e.target.value})}>{pathways.map(x=><option key={x}>{x}</option>)}</select></label><fieldset><legend>What would you like help with?</legend><div className="choice-grid">{interestOptions.map(x=><label className={draft.interests.includes(x)?"selected":""} key={x}><input type="checkbox" checked={draft.interests.includes(x)} onChange={()=>toggleInterest(x)}/>{x}</label>)}</div></fieldset><label>Schools, programs, or careers on your mind <span>(optional, separated by commas)</span><textarea value={draft.target_schools.join(", ")} onChange={e=>setDraft({...draft,target_schools:e.target.value.split(",").map(x=>x.trim()).filter(Boolean)})}/></label>{error&&<div className="form-message">{error}</div>}<button className="primary" disabled={saving}>{saving?"Building your path…":"Create my path →"}</button></form></main>
 }
+
+function StudentDashboard({session,profile,onProfile}:{session:Session;profile:Profile;onProfile:(p:Profile)=>void}){
+ const [steps,setSteps]=useState<Step[]>([]);const [newStep,setNewStep]=useState("");
+ useEffect(()=>{supabase.from("student_steps").select("id,title,due_date,category,completed,position").order("position").then(({data})=>setSteps((data??[]) as Step[]))},[]);
+ async function toggle(step:Step){const completed=!step.completed;const {error}=await supabase.from("student_steps").update({completed}).eq("id",step.id);if(!error)setSteps(s=>s.map(x=>x.id===step.id?{...x,completed}:x))}
+ async function addStep(e:FormEvent){e.preventDefault();if(!newStep.trim())return;const {data,error}=await supabase.from("student_steps").insert({user_id:session.user.id,title:newStep.trim(),category:"My goal",position:steps.length+1}).select().single();if(!error&&data){setSteps([...steps,data as Step]);setNewStep("")}}
+ const complete=steps.filter(x=>x.completed).length;const progress=steps.length?Math.round(complete/steps.length*100):0;
+ return <main className="student-app"><aside className="app-sidebar"><a className="brand" href="#"><span className="brand-mark">F</span><span>Future<br/><b>Waymark</b></span></a><nav><a className="active" href="#dashboard">Overview</a><a href="#path">My path</a><a href="#resources">Resources</a><a href="#profile">My information</a></nav><div className="sidebar-note"><b>Official guidance matters</b><p>Confirm deadlines and requirements with the appropriate organization.</p></div></aside><section className="app-main" id="dashboard"><header className="app-top"><div><span className="kicker dark">MY WAYMARK</span><h1>Hi, {profile.first_name || "student"}.</h1></div><button className="avatar-menu" onClick={()=>supabase.auth.signOut()}><span>{(profile.first_name?.[0]||session.user.email?.[0]||"S").toUpperCase()}</span> Sign out</button></header><div className="dashboard-grid"><article className="path-summary"><div><span className="kicker">YOUR CURRENT DIRECTION</span><h2>{profile.pathway}</h2><p>Graduation {profile.graduation_year} · Grade {profile.grade_level}</p></div><div className="progress-ring" style={{"--progress":`${progress*3.6}deg`} as React.CSSProperties}><b>{progress}%</b><small>complete</small></div></article><article className="next-action"><span className="kicker dark">NEXT BEST STEP</span><h3>{steps.find(x=>!x.completed)?.title||"Your current path is complete"}</h3><p>Small, consistent actions create momentum.</p></article></div><section className="path-board" id="path"><div className="section-title"><div><span className="kicker dark">CUSTOMIZABLE PLAN</span><h2>Your path forward</h2></div><button onClick={()=>onProfile({...profile,onboarding_complete:false})}>Edit my information</button></div><div className="steps-list">{steps.map((step,i)=><button key={step.id} className={step.completed?"step complete":"step"} onClick={()=>toggle(step)}><span>{step.completed?"✓":String(i+1).padStart(2,"0")}</span><div><b>{step.title}</b><small>{step.category}{step.due_date?` · Due ${step.due_date}`:""}</small></div><i>{step.completed?"Completed":"Mark complete"}</i></button>)}</div><form className="add-step" onSubmit={addStep}><input value={newStep} onChange={e=>setNewStep(e.target.value)} placeholder="Add your own goal or milestone" aria-label="New milestone"/><button>Add to my path</button></form></section><section className="profile-snapshot" id="profile"><span className="kicker dark">YOUR INFORMATION</span><h2>What this plan is built around</h2><div><p><b>Interests</b>{profile.interests.join(" · ")||"Not selected yet"}</p><p><b>Schools, programs, or careers</b>{profile.target_schools.join(" · ")||"Add these whenever you’re ready"}</p></div></section><ResourceLibrary userId={session.user.id}/></section></main>
+}
+
+function ResourceLibrary({userId}:{userId?:string}){const [resources,setResources]=useState(fallbackResources);const [query,setQuery]=useState("");const [saved,setSaved]=useState<number[]>([]);
+ useEffect(()=>{supabase.from("resources").select("id,type,title,category,description,duration,skill_level,icon,accent").order("id").then(({data})=>{if(data?.length)setResources(data.map(r=>({id:Number(r.id),type:r.type,title:r.title,category:r.category,detail:r.description,time:r.duration,level:r.skill_level,icon:r.icon,accent:r.accent}))) });if(userId)supabase.from("saved_resources").select("resource_id").then(({data})=>setSaved((data??[]).map(x=>Number(x.resource_id))))},[userId]);
+ const filtered=useMemo(()=>resources.filter(r=>`${r.title} ${r.category} ${r.detail}`.toLowerCase().includes(query.toLowerCase())),[resources,query]);async function toggle(id:number){if(!userId)return; if(saved.includes(id)){await supabase.from("saved_resources").delete().eq("resource_id",id);setSaved(saved.filter(x=>x!==id))}else{await supabase.from("saved_resources").insert({user_id:userId,resource_id:id});setSaved([...saved,id])}}
+ return <section className="resource-section" id="resources"><div className="section-title"><div><span className="kicker dark">RESOURCE LIBRARY</span><h2>Guidance for your next step</h2></div><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search resources" aria-label="Search resources"/></div><div className="resource-grid">{filtered.map(r=><article className="resource-card" key={r.id}><div className={`resource-art ${r.accent}`}><span>{r.icon}</span><small>{r.type}</small></div><div className="resource-body"><small>{r.category}</small><h3>{r.title}</h3><p>{r.detail}</p><div>{r.time} · {r.level}</div></div><button className={saved.includes(r.id)?"save saved":"save"} onClick={()=>toggle(r.id)} aria-label={`Save ${r.title}`}>{saved.includes(r.id)?"♥":"♡"}</button></article>)}</div></section>}
+
+export default function Home(){const [session,setSession]=useState<Session|null>(null);const [profile,setProfile]=useState<Profile|null>(null);const [loading,setLoading]=useState(true);const [authOpen,setAuthOpen]=useState(false);
+ useEffect(()=>{supabase.auth.getSession().then(({data})=>setSession(data.session));const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);if(!next)setProfile(null)});return()=>subscription.unsubscribe()},[]);
+ useEffect(()=>{if(!session){setLoading(false);return}setLoading(true);supabase.from("student_profiles").select("*").eq("id",session.user.id).maybeSingle().then(({data})=>{setProfile(data?data as Profile:{...emptyProfile,id:session.user.id,first_name:String(session.user.user_metadata?.first_name||"")});setLoading(false)})},[session]);
+ if(loading)return <div className="loading-screen"><span className="brand-mark">F</span><p>Finding your waymark…</p></div>;if(session&&profile&&!profile.onboarding_complete)return <Onboarding profile={profile} onSaved={setProfile}/>;if(session&&profile)return <StudentDashboard session={session} profile={profile} onProfile={setProfile}/>;
+ return <div className="public-site"><header className="site-header"><a className="brand" href="#top"><span className="brand-mark">F</span><span>Future<br/><b>Waymark</b></span></a><nav><a href="#how">How it works</a><a href="#resources">Resources</a><a href="#families">For families</a></nav><div><button className="text-button" onClick={()=>setAuthOpen(true)}>Sign in</button><button className="header-cta" onClick={()=>setAuthOpen(true)}>Create your path</button></div></header><main><section className="hero" id="top"><div className="hero-copy"><span className="kicker">A PLAN THAT BELONGS TO YOU</span><h1>Find your way<br/><em>forward.</em></h1><p>Create a private student account, tell us what you’re considering, and build a path you can adjust as your plans change.</p><div className="hero-actions"><button className="light-cta" onClick={()=>setAuthOpen(true)}>Create my free account →</button><button className="ghost-cta" onClick={()=>document.getElementById("how")?.scrollIntoView({behavior:"smooth"})}>See how it works</button></div><small>No school partnership required. Students sign up directly.</small></div><div className="path-preview"><span>MY WAYMARK</span><h2>Four-year college</h2><div><i className="done">✓</i><p><b>Build a balanced college list</b><small>Completed</small></p></div><div><i>2</i><p><b>Request recommendation letters</b><small>Your next best step</small></p></div><div><i>3</i><p><b>Complete FAFSA</b><small>Coming up</small></p></div><footer><b>40%</b><span><i style={{width:"40%"}}></i></span><small>of path complete</small></footer></div></section><section className="how-section" id="how"><span className="kicker dark">BUILT AROUND THE STUDENT</span><h2>One account. A path that evolves with you.</h2><div className="how-grid"><article><b>01</b><h3>Tell us about yourself</h3><p>Add your graduation year, interests, possible schools, programs, or careers.</p></article><article><b>02</b><h3>Get a starting path</h3><p>Receive practical milestones based on college, trade, apprenticeship, work, military, or exploration goals.</p></article><article><b>03</b><h3>Make it your own</h3><p>Add goals, mark progress, save resources, and update your direction whenever life changes.</p></article></div></section><ResourceLibrary/><section className="family-banner" id="families"><div><span className="kicker">FOR STUDENTS AND FAMILIES</span><h2>Support without taking over.</h2><p>Future Waymark helps students prepare and stay organized while encouraging them to verify official requirements with colleges, programs, testing organizations, financial-aid offices, and counselors.</p></div><button onClick={()=>setAuthOpen(true)}>Start a student path</button></section></main><footer className="site-footer"><div className="brand"><span className="brand-mark">F</span><span>Future <b>Waymark</b></span></div><p>Educational guidance for every path forward.</p></footer>{authOpen&&<AuthPanel close={()=>setAuthOpen(false)}/>}</div>}
