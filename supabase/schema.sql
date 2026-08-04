@@ -93,3 +93,4 @@ create policy "Students remove own saved resources" on public.saved_resources fo
 -- are defined in resource_engagement.sql.
 -- SAT and ACT plans and practice logs are defined in test_prep_tracking.sql.
 -- Private resume versions are defined in resume_builder.sql.
+-- Private writing workspaces are defined in essay_writing_center.sql.
