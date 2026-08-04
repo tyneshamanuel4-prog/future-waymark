@@ -86,3 +86,6 @@ create policy "Students delete own steps" on public.student_steps for delete to 
 create policy "Students read own saved resources" on public.saved_resources for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Students save resources for themselves" on public.saved_resources for insert to authenticated with check ((select auth.uid()) = user_id);
 create policy "Students remove own saved resources" on public.saved_resources for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- Student reading progress, recently viewed resources, and custom collections
+-- are defined in resource_engagement.sql.
