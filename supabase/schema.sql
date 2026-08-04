@@ -53,6 +53,8 @@ create table if not exists public.student_steps (
   title text not null check (char_length(title) between 1 and 180),
   category text not null default 'My goal',
   due_date date,
+  reminder_date date,
+  notes text not null default '' check (char_length(notes) <= 1200),
   completed boolean not null default false,
   position integer not null default 0,
   created_at timestamptz not null default now(),
