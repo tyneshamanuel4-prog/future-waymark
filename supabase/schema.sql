@@ -98,3 +98,4 @@ create policy "Students remove own saved resources" on public.saved_resources fo
 -- College and scholarship application records are defined in application_scholarship_tracker.sql.
 -- Private recommendation request records are defined in recommendation_letters.sql.
 -- Private FAFSA plans and financial aid offers are defined in financial_aid_center.sql.
+-- Private college visit plans and fit notes are defined in college_visits.sql.
