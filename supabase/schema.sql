@@ -91,3 +91,4 @@ create policy "Students remove own saved resources" on public.saved_resources fo
 
 -- Student reading progress, recently viewed resources, and custom collections
 -- are defined in resource_engagement.sql.
+-- SAT and ACT plans and practice logs are defined in test_prep_tracking.sql.
