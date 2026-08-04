@@ -95,3 +95,4 @@ create policy "Students remove own saved resources" on public.saved_resources fo
 -- Private resume versions are defined in resume_builder.sql.
 -- Private writing workspaces are defined in essay_writing_center.sql.
 -- Private interview plans and STAR practice sessions are defined in interview_preparation.sql.
+-- College and scholarship application records are defined in application_scholarship_tracker.sql.
