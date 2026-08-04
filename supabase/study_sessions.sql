@@ -1,0 +1,4 @@
+create table if not exists public.study_sessions(id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,subject text not null,goal text not null default '',planned_for timestamptz,minutes integer not null default 25 check(minutes between 1 and 600),strategy text not null default 'Focused Study',completed boolean not null default false,reflection text not null default '',created_at timestamptz not null default now());
+create index if not exists study_sessions_user_date_idx on public.study_sessions(user_id,planned_for);
+alter table public.study_sessions enable row level security;revoke all on public.study_sessions from anon;grant select,insert,update,delete on public.study_sessions to authenticated;
+create policy "Students manage own study sessions" on public.study_sessions for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);

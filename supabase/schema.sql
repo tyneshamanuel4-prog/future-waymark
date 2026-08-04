@@ -99,3 +99,4 @@ create policy "Students remove own saved resources" on public.saved_resources fo
 -- Private recommendation request records are defined in recommendation_letters.sql.
 -- Private FAFSA plans and financial aid offers are defined in financial_aid_center.sql.
 -- Private college visit plans and fit notes are defined in college_visits.sql.
+-- Private study plans and reflections are defined in study_sessions.sql.
