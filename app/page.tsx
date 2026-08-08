@@ -14,6 +14,7 @@ import { TestPrepCenter } from "./test-prep-center";
 import { ResourceContent } from "./resource-content";
 import { SchoolResearchCenter } from "./school-research-center";
 import { DraftSafety, StudentCommandCenter } from "./student-experience";
+import { StudentProductivityTools } from "./student-productivity-tools";
 
 type Resource = {
   id: number;
@@ -2227,6 +2228,7 @@ function StudentDashboard({
             <a href="#path">My path</a>
             <a href="#deadlines">All deadlines</a>
             <a href="#school-research">Schools and comparisons</a>
+            <a href="#school-workspaces">School workspaces</a>
           </details>
           <details open>
             <summary>Applications</summary>
@@ -2248,6 +2250,7 @@ function StudentDashboard({
             <a href="#resources">Resources</a>
             <a href="#profile">My information</a>
             <a href="#account">Account settings</a>
+            <a href="#privacy">Privacy and my data</a>
           </details>
         </nav>
         <div className="sidebar-note">
@@ -2452,6 +2455,11 @@ function StudentDashboard({
         initialSchools={profile.target_schools}
         initialGoals={profile.goals}
         onProfile={(target_schools, goals) => onProfile({ ...profile, target_schools, goals })}
+      />
+      <StudentProductivityTools
+        userId={session.user.id}
+        schools={profile.target_schools}
+        email={session.user.email ?? ""}
       />
       <AccountSettings session={session} />
         <ResourceLibrary userId={session.user.id} />
