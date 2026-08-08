@@ -18,6 +18,7 @@ import { StudentProductivityTools } from "./student-productivity-tools";
 import { PlanningAssistant } from "./planning-assistant";
 import { GuidedProgress } from "./guided-progress";
 import { StudentNotifications } from "./student-notifications";
+import { AdvisorBrief } from "./advisor-brief";
 
 type Resource = {
   id: number;
@@ -2234,6 +2235,7 @@ function StudentDashboard({
             <a href="#planning-assistant">Calendar and documents</a>
             <a href="#school-research">Schools and comparisons</a>
             <a href="#school-workspaces">School workspaces</a>
+            <a href="#advisor-brief">Advisor meeting brief</a>
           </details>
           <details open>
             <summary>Applications</summary>
@@ -2292,6 +2294,14 @@ function StudentDashboard({
           userId={session.user.id}
           hasProfile={Boolean(profile.first_name && profile.graduation_year)}
           schoolCount={profile.target_schools.length}
+        />
+        <AdvisorBrief
+          userId={session.user.id}
+          studentName={[profile.first_name, profile.last_name].filter(Boolean).join(" ")}
+          graduationYear={profile.graduation_year}
+          pathways={profile.pathways}
+          schools={profile.target_schools}
+          steps={steps}
         />
         <PlanningAssistant userId={session.user.id} />
         {reminders.length > 0 && (
