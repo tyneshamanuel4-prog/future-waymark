@@ -17,6 +17,7 @@ import { DraftSafety, StudentCommandCenter } from "./student-experience";
 import { StudentProductivityTools } from "./student-productivity-tools";
 import { PlanningAssistant } from "./planning-assistant";
 import { GuidedProgress } from "./guided-progress";
+import { StudentNotifications } from "./student-notifications";
 
 type Resource = {
   id: number;
@@ -2286,6 +2287,7 @@ function StudentDashboard({
           </button>
         </header>
         <StudentCommandCenter userId={session.user.id} steps={steps} />
+        <StudentNotifications userId={session.user.id} steps={steps} />
         <GuidedProgress
           userId={session.user.id}
           hasProfile={Boolean(profile.first_name && profile.graduation_year)}
