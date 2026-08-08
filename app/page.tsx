@@ -15,6 +15,7 @@ import { ResourceContent } from "./resource-content";
 import { SchoolResearchCenter } from "./school-research-center";
 import { DraftSafety, StudentCommandCenter } from "./student-experience";
 import { StudentProductivityTools } from "./student-productivity-tools";
+import { PlanningAssistant } from "./planning-assistant";
 
 type Resource = {
   id: number;
@@ -2227,6 +2228,7 @@ function StudentDashboard({
             <summary>Planning</summary>
             <a href="#path">My path</a>
             <a href="#deadlines">All deadlines</a>
+            <a href="#planning-assistant">Calendar and documents</a>
             <a href="#school-research">Schools and comparisons</a>
             <a href="#school-workspaces">School workspaces</a>
           </details>
@@ -2282,6 +2284,7 @@ function StudentDashboard({
           </button>
         </header>
         <StudentCommandCenter userId={session.user.id} steps={steps} />
+        <PlanningAssistant userId={session.user.id} />
         {reminders.length > 0 && (
           <div className="reminder-banner">
             <b>
