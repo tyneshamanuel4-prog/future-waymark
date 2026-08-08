@@ -13,6 +13,7 @@ import { SchoolPicker } from "./school-picker";
 import { TestPrepCenter } from "./test-prep-center";
 import { ResourceContent } from "./resource-content";
 import { SchoolResearchCenter } from "./school-research-center";
+import { DraftSafety, StudentCommandCenter } from "./student-experience";
 
 type Resource = {
   id: number;
@@ -2135,6 +2136,17 @@ function StudentDashboard({
       .order("position")
       .then(({ data }) => setSteps((data ?? []) as Step[]));
   }, [session.user.id]);
+  useEffect(() => {
+    const remember = () => {
+      if (window.location.hash)
+        localStorage.setItem("future-waymark-last-section", window.location.hash);
+    };
+    window.addEventListener("hashchange", remember);
+    const last = localStorage.getItem("future-waymark-last-section");
+    if (!window.location.hash && last)
+      requestAnimationFrame(() => document.querySelector(last)?.scrollIntoView());
+    return () => window.removeEventListener("hashchange", remember);
+  }, []);
   async function toggle(step: Step) {
     const completed = !step.completed;
     const { error } = await supabase
@@ -2198,6 +2210,7 @@ function StudentDashboard({
   );
   return (
     <main className="student-app">
+      <DraftSafety />
       <aside className="app-sidebar">
         <a className="brand" href="#">
           <span className="brand-mark">F</span>
@@ -2207,16 +2220,35 @@ function StudentDashboard({
             <b>Waymark</b>
           </span>
         </a>
-        <nav>
-          <a className="active" href="#dashboard">
-            Overview
-          </a>
-          <a href="#path">My path</a>
-          <a href="#deadlines">Deadlines</a>
-          <a href="#school-research">Research schools</a>
-          <a href="#resources">Resources</a>
-          <a href="#profile">My information</a>
-          <a href="#account">Account settings</a>
+        <nav className="grouped-nav">
+          <a className="active" href="#today">Today</a>
+          <details open>
+            <summary>Planning</summary>
+            <a href="#path">My path</a>
+            <a href="#deadlines">All deadlines</a>
+            <a href="#school-research">Schools and comparisons</a>
+          </details>
+          <details open>
+            <summary>Applications</summary>
+            <a href="#applications">Applications and scholarships</a>
+            <a href="#recommendations">Recommendations</a>
+            <a href="#financial-aid">Financial aid</a>
+            <a href="#college-visits">College visits</a>
+          </details>
+          <details>
+            <summary>Preparation</summary>
+            <a href="#testing">SAT and ACT</a>
+            <a href="#essays">Essay center</a>
+            <a href="#resume">Resume builder</a>
+            <a href="#interviews">Interview preparation</a>
+            <a href="#study-skills">Study skills</a>
+          </details>
+          <details>
+            <summary>Library and account</summary>
+            <a href="#resources">Resources</a>
+            <a href="#profile">My information</a>
+            <a href="#account">Account settings</a>
+          </details>
         </nav>
         <div className="sidebar-note">
           <b>Official guidance matters</b>
@@ -2246,6 +2278,7 @@ function StudentDashboard({
             Sign out
           </button>
         </header>
+        <StudentCommandCenter userId={session.user.id} steps={steps} />
         {reminders.length > 0 && (
           <div className="reminder-banner">
             <b>
