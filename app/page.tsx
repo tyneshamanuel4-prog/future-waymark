@@ -16,6 +16,7 @@ import { SchoolResearchCenter } from "./school-research-center";
 import { DraftSafety, StudentCommandCenter } from "./student-experience";
 import { StudentProductivityTools } from "./student-productivity-tools";
 import { PlanningAssistant } from "./planning-assistant";
+import { GuidedProgress } from "./guided-progress";
 
 type Resource = {
   id: number;
@@ -2226,6 +2227,7 @@ function StudentDashboard({
           <a className="active" href="#today">Today</a>
           <details open>
             <summary>Planning</summary>
+            <a href="#getting-started">Getting started</a>
             <a href="#path">My path</a>
             <a href="#deadlines">All deadlines</a>
             <a href="#planning-assistant">Calendar and documents</a>
@@ -2284,6 +2286,11 @@ function StudentDashboard({
           </button>
         </header>
         <StudentCommandCenter userId={session.user.id} steps={steps} />
+        <GuidedProgress
+          userId={session.user.id}
+          hasProfile={Boolean(profile.first_name && profile.graduation_year)}
+          schoolCount={profile.target_schools.length}
+        />
         <PlanningAssistant userId={session.user.id} />
         {reminders.length > 0 && (
           <div className="reminder-banner">
