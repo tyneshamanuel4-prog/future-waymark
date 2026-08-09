@@ -2206,6 +2206,13 @@ function StudentDashboard({
     window.history.replaceState(null, "", window.location.pathname);
     document.querySelector("#today")?.scrollIntoView({ behavior: "smooth" });
   }
+  function jumpToSection(section: string) {
+    if (!/^#[a-z0-9-]+$/i.test(section)) return;
+    document.querySelector(section)?.scrollIntoView({ behavior: "smooth" });
+    window.history.replaceState(null, "", section);
+    localStorage.setItem("future-waymark-last-section", section);
+    setLastSection(section);
+  }
   const lastSectionLabel = sectionLabels[lastSection] || "Your recent work";
   async function toggle(step: Step) {
     const completed = !step.completed;
@@ -2350,6 +2357,49 @@ function StudentDashboard({
             Sign out
           </button>
         </header>
+        <nav className="section-jump" aria-label="Jump to a dashboard section">
+          <label htmlFor="section-jump-select">Jump to</label>
+          <select
+            id="section-jump-select"
+            value=""
+            onChange={(event) => jumpToSection(event.target.value)}
+          >
+            <option value="" disabled>Choose a section</option>
+            <option value="#today">Today</option>
+            <optgroup label="Planning">
+              <option value="#path">My path</option>
+              <option value="#deadlines">Deadlines</option>
+              <option value="#planning-assistant">Calendar and documents</option>
+              <option value="#deadline-load">Deadline load check</option>
+              <option value="#backward-planner">Backward planner</option>
+              <option value="#school-research">Schools and comparisons</option>
+              <option value="#advisor-brief">Advisor meeting brief</option>
+            </optgroup>
+            <optgroup label="Applications">
+              <option value="#applications">Applications and scholarships</option>
+              <option value="#submission-checks">Submission checkpoints</option>
+              <option value="#recommendations">Recommendations</option>
+              <option value="#financial-aid">Financial aid</option>
+              <option value="#college-decisions">College decisions</option>
+              <option value="#college-visits">College visits</option>
+            </optgroup>
+            <optgroup label="Preparation">
+              <option value="#testing">SAT and ACT planning</option>
+              <option value="#essays">Essay center</option>
+              <option value="#resume">Resume builder</option>
+              <option value="#interviews">Interview preparation</option>
+              <option value="#study-skills">Study skills</option>
+            </optgroup>
+            <optgroup label="Library and account">
+              <option value="#resources">Resource library</option>
+              <option value="#profile">My information</option>
+              <option value="#account">Account settings</option>
+              <option value="#privacy">Privacy and my data</option>
+              <option value="#recent-activity">Recent activity</option>
+              <option value="#progress-report">Weekly progress report</option>
+            </optgroup>
+          </select>
+        </nav>
         {lastSection && lastSection !== "#today" && (
           <aside className="continue-work" aria-label="Continue your recent work">
             <div>
