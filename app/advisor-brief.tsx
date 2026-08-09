@@ -13,6 +13,7 @@ export function AdvisorBrief({ userId, studentName, graduationYear, pathways, sc
   const [applications, setApplications] = useState<Application[]>([]);
   const [tests, setTests] = useState<{ exam: string; target_score: number | null; planned_test_date: string | null }[]>([]);
   const [scholarships, setScholarships] = useState<{ scholarship_name: string; status: string; deadline: string | null }[]>([]);
+  const [contacts, setContacts] = useState<{ name: string; role: string; follow_up_date: string | null }[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -21,11 +22,13 @@ export function AdvisorBrief({ userId, studentName, graduationYear, pathways, sc
       supabase.from("college_applications").select("college_name,status,deadline").eq("user_id", userId).order("deadline"),
       supabase.from("test_plans").select("exam,target_score,planned_test_date").eq("user_id", userId),
       supabase.from("scholarship_applications").select("scholarship_name,status,deadline").eq("user_id", userId).order("deadline"),
-    ]).then(([brief, colleges, testPlans, awards]) => {
+      supabase.from("student_support_contacts").select("name,role,follow_up_date").eq("user_id", userId).order("follow_up_date", { ascending: true, nullsFirst: false }),
+    ]).then(([brief, colleges, testPlans, awards, support]) => {
       if (brief.data) { setMeetingDate(brief.data.meeting_date ?? ""); setQuestions(brief.data.questions); setNotes(brief.data.meeting_notes); }
       setApplications((colleges.data ?? []) as Application[]);
       setTests((testPlans.data ?? []) as typeof tests);
       setScholarships((awards.data ?? []) as typeof scholarships);
+      setContacts((support.data ?? []) as typeof contacts);
     });
   }, [userId]);
 
@@ -49,6 +52,9 @@ export function AdvisorBrief({ userId, studentName, graduationYear, pathways, sc
     "",
     "SCHOLARSHIPS",
     ...(scholarships.length ? scholarships.slice(0, 6).map((item) => `- ${item.scholarship_name}: ${item.status}${item.deadline ? ` (${item.deadline})` : ""}`) : ["- No scholarships added yet"]),
+    "",
+    "SUPPORT CONTACTS AND FOLLOW-UPS",
+    ...(contacts.length ? contacts.slice(0, 8).map((item) => `- ${item.name} (${item.role})${item.follow_up_date ? ` - follow up ${item.follow_up_date}` : ""}`) : ["- No support contacts added yet"]),
     "",
     "QUESTIONS TO DISCUSS",
     questions || "No questions entered yet.",
