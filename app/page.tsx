@@ -24,6 +24,7 @@ import { SupportNetwork } from "./support-network";
 import { RecentActivity } from "./recent-activity";
 import { HelpCenter } from "./help-center";
 import { DeadlineLoadCheck } from "./deadline-load-check";
+import { BackwardPlanner } from "./backward-planner";
 
 type Resource = {
   id: number;
@@ -2241,6 +2242,7 @@ function StudentDashboard({
             <a href="#deadlines">All deadlines</a>
             <a href="#planning-assistant">Calendar and documents</a>
             <a href="#deadline-load">Deadline load check</a>
+            <a href="#backward-planner">Backward planner</a>
             <a href="#school-research">Schools and comparisons</a>
             <a href="#school-workspaces">School workspaces</a>
             <a href="#advisor-brief">Advisor meeting brief</a>
@@ -2318,6 +2320,7 @@ function StudentDashboard({
         />
         <PlanningAssistant userId={session.user.id} />
         <DeadlineLoadCheck userId={session.user.id} />
+        <BackwardPlanner userId={session.user.id} />
         {reminders.length > 0 && (
           <div className="reminder-banner">
             <b>
