@@ -14,6 +14,7 @@ export function AdvisorBrief({ userId, studentName, graduationYear, pathways, sc
   const [tests, setTests] = useState<{ exam: string; target_score: number | null; planned_test_date: string | null }[]>([]);
   const [scholarships, setScholarships] = useState<{ scholarship_name: string; status: string; deadline: string | null }[]>([]);
   const [contacts, setContacts] = useState<{ name: string; role: string; follow_up_date: string | null }[]>([]);
+  const [submissionChecks, setSubmissionChecks] = useState<{ item_name: string; confirmation_saved: boolean; follow_up_needed: boolean }[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -23,12 +24,14 @@ export function AdvisorBrief({ userId, studentName, graduationYear, pathways, sc
       supabase.from("test_plans").select("exam,target_score,planned_test_date").eq("user_id", userId),
       supabase.from("scholarship_applications").select("scholarship_name,status,deadline").eq("user_id", userId).order("deadline"),
       supabase.from("student_support_contacts").select("name,role,follow_up_date").eq("user_id", userId).order("follow_up_date", { ascending: true, nullsFirst: false }),
-    ]).then(([brief, colleges, testPlans, awards, support]) => {
+      supabase.from("student_submission_checkpoints").select("item_name,confirmation_saved,follow_up_needed").eq("user_id", userId),
+    ]).then(([brief, colleges, testPlans, awards, support, checkpoints]) => {
       if (brief.data) { setMeetingDate(brief.data.meeting_date ?? ""); setQuestions(brief.data.questions); setNotes(brief.data.meeting_notes); }
       setApplications((colleges.data ?? []) as Application[]);
       setTests((testPlans.data ?? []) as typeof tests);
       setScholarships((awards.data ?? []) as typeof scholarships);
       setContacts((support.data ?? []) as typeof contacts);
+      setSubmissionChecks((checkpoints.data ?? []) as typeof submissionChecks);
     });
   }, [userId]);
 
@@ -55,6 +58,9 @@ export function AdvisorBrief({ userId, studentName, graduationYear, pathways, sc
     "",
     "SUPPORT CONTACTS AND FOLLOW-UPS",
     ...(contacts.length ? contacts.slice(0, 8).map((item) => `- ${item.name} (${item.role})${item.follow_up_date ? ` - follow up ${item.follow_up_date}` : ""}`) : ["- No support contacts added yet"]),
+    "",
+    "OFFICIAL SUBMISSION CHECKS",
+    ...(submissionChecks.length ? submissionChecks.map((item) => `- ${item.item_name}: ${item.follow_up_needed ? "follow-up needed" : item.confirmation_saved ? "confirmation recorded" : "confirmation not recorded"}`) : ["- No submission checkpoints recorded yet"]),
     "",
     "QUESTIONS TO DISCUSS",
     questions || "No questions entered yet.",

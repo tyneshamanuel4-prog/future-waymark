@@ -15,6 +15,7 @@ export function StudentNotifications({ userId, steps }: { userId: string; steps:
   const [weekly, setWeekly] = useState<{ goal: string; completed: boolean } | null>(null);
   const [recentWins, setRecentWins] = useState(0);
   const [followUps, setFollowUps] = useState<{ id: string; name: string; role: string; follow_up_date: string }[]>([]);
+  const [submissionChecks, setSubmissionChecks] = useState<{ id: string; item_name: string; confirmation_saved: boolean; follow_up_needed: boolean }[]>([]);
   const [lastSection, setLastSection] = useState("");
 
   useEffect(() => {
@@ -25,12 +26,14 @@ export function StudentNotifications({ userId, steps }: { userId: string; steps:
       supabase.from("student_weekly_focus").select("goal,completed").eq("user_id", userId).order("week_start", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("student_steps").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("completed", true).gte("updated_at", weekAgo),
       supabase.from("student_support_contacts").select("id,name,role,follow_up_date").eq("user_id", userId).not("follow_up_date", "is", null),
-    ]).then(([dismissals, colleges, focus, wins, contacts]) => {
+      supabase.from("student_submission_checkpoints").select("id,item_name,confirmation_saved,follow_up_needed").eq("user_id", userId),
+    ]).then(([dismissals, colleges, focus, wins, contacts, checkpoints]) => {
       setDismissed((dismissals.data ?? []).map((item) => item.notification_key));
       setApplications((colleges.data ?? []) as { id: string; college_name: string; deadline: string }[]);
       setWeekly(focus.data);
       setRecentWins(wins.count ?? 0);
       setFollowUps((contacts.data ?? []) as { id: string; name: string; role: string; follow_up_date: string }[]);
+      setSubmissionChecks((checkpoints.data ?? []) as { id: string; item_name: string; confirmation_saved: boolean; follow_up_needed: boolean }[]);
     });
     setLastSection(localStorage.getItem("future-waymark-last-section") ?? "");
   }, [userId]);
@@ -45,8 +48,10 @@ export function StudentNotifications({ userId, steps }: { userId: string; steps:
     if (recentWins) items.push({ key: `wins-${recentWins}`, title: `${recentWins} recent win${recentWins === 1 ? "" : "s"}`, detail: "You completed important steps this week. Keep going.", href: "#path", tone: "win" });
     const contactsDue = followUps.filter((contact) => daysFromNow(contact.follow_up_date) <= 7);
     if (contactsDue.length) items.push({ key: `contacts-${contactsDue.map((item) => item.id).join("-")}`, title: `${contactsDue.length} contact follow-up${contactsDue.length === 1 ? "" : "s"} due`, detail: contactsDue.slice(0, 2).map((item) => `${item.name} (${item.role})`).join(" and "), href: "#support-network", tone: contactsDue.some((item) => daysFromNow(item.follow_up_date) < 0) ? "urgent" : "soon" });
+    const submissionFollowUps = submissionChecks.filter((item) => item.follow_up_needed || !item.confirmation_saved);
+    if (submissionFollowUps.length) items.push({ key: `submissions-${submissionFollowUps.map((item) => item.id).join("-")}`, title: `${submissionFollowUps.length} submission check${submissionFollowUps.length === 1 ? "" : "s"} need attention`, detail: submissionFollowUps.slice(0, 2).map((item) => item.item_name).join(" and "), href: "#submission-checks", tone: "urgent" });
     return items.filter((item) => !dismissed.includes(item.key));
-  }, [applications, dismissed, followUps, recentWins, steps, weekly]);
+  }, [applications, dismissed, followUps, recentWins, steps, submissionChecks, weekly]);
 
   async function dismiss(key: string) {
     const { error } = await supabase.from("student_notification_dismissals").upsert({ user_id: userId, notification_key: key, dismissed_at: new Date().toISOString() }, { onConflict: "user_id,notification_key" });
