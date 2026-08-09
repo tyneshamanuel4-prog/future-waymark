@@ -25,6 +25,7 @@ import { RecentActivity } from "./recent-activity";
 import { HelpCenter } from "./help-center";
 import { DeadlineLoadCheck } from "./deadline-load-check";
 import { BackwardPlanner } from "./backward-planner";
+import { SubmissionCheckpoints } from "./submission-checkpoints";
 
 type Resource = {
   id: number;
@@ -1724,6 +1725,7 @@ function AccountSettings({ session }: { session: Session }) {
       <EssayWritingCenter userId={session.user.id} />
       <InterviewPreparationCenter userId={session.user.id} />
       <ApplicationTracker userId={session.user.id} />
+      <SubmissionCheckpoints userId={session.user.id} />
       <RecommendationCenter userId={session.user.id} />
       <SupportNetwork userId={session.user.id} />
       <FinancialAidCenter userId={session.user.id} />
@@ -2250,6 +2252,7 @@ function StudentDashboard({
           <details open>
             <summary>Applications</summary>
             <a href="#applications">Applications and scholarships</a>
+            <a href="#submission-checks">Submission checkpoints</a>
             <a href="#recommendations">Recommendations</a>
             <a href="#support-network">Support network</a>
             <a href="#financial-aid">Financial aid</a>
