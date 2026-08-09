@@ -26,6 +26,7 @@ import { HelpCenter } from "./help-center";
 import { DeadlineLoadCheck } from "./deadline-load-check";
 import { BackwardPlanner } from "./backward-planner";
 import { SubmissionCheckpoints } from "./submission-checkpoints";
+import { ProgressReport } from "./progress-report";
 
 type Resource = {
   id: number;
@@ -2274,6 +2275,7 @@ function StudentDashboard({
             <a href="#account">Account settings</a>
             <a href="#privacy">Privacy and my data</a>
             <a href="#recent-activity">Recent activity</a>
+            <a href="#progress-report">Weekly progress report</a>
           </details>
         </nav>
         <div className="sidebar-note">
@@ -2308,6 +2310,7 @@ function StudentDashboard({
         <StudentNotifications userId={session.user.id} steps={steps} />
         <HelpCenter />
         <RecentActivity userId={session.user.id} />
+        <ProgressReport userId={session.user.id} studentName={[profile.first_name,profile.last_name].filter(Boolean).join(" ")} />
         <GuidedProgress
           userId={session.user.id}
           hasProfile={Boolean(profile.first_name && profile.graduation_year)}
