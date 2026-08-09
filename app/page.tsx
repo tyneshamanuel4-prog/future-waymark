@@ -22,6 +22,7 @@ import { AdvisorBrief } from "./advisor-brief";
 import { CollegeDecisionWorkspace } from "./college-decision-workspace";
 import { SupportNetwork } from "./support-network";
 import { RecentActivity } from "./recent-activity";
+import { HelpCenter } from "./help-center";
 
 type Resource = {
   id: number;
@@ -2298,6 +2299,7 @@ function StudentDashboard({
         </header>
         <StudentCommandCenter userId={session.user.id} steps={steps} />
         <StudentNotifications userId={session.user.id} steps={steps} />
+        <HelpCenter />
         <RecentActivity userId={session.user.id} />
         <GuidedProgress
           userId={session.user.id}
