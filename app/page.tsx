@@ -167,6 +167,35 @@ const milestoneCategories = [
 ] as const;
 const categoryHref = (category: string) =>
   milestoneCategories.find(([name]) => name === category)?.[1] ?? "#path";
+const sectionLabels: Record<string, string> = {
+  "#getting-started": "Getting started",
+  "#path": "My path",
+  "#deadlines": "All deadlines",
+  "#planning-assistant": "Calendar and documents",
+  "#deadline-load": "Deadline load check",
+  "#backward-planner": "Backward planner",
+  "#school-research": "Schools and comparisons",
+  "#school-workspaces": "School workspaces",
+  "#advisor-brief": "Advisor meeting brief",
+  "#applications": "Applications and scholarships",
+  "#submission-checks": "Submission checkpoints",
+  "#recommendations": "Recommendations",
+  "#support-network": "Support network",
+  "#financial-aid": "Financial aid",
+  "#college-decisions": "College decisions",
+  "#college-visits": "College visits",
+  "#testing": "SAT and ACT planning",
+  "#essays": "Essay center",
+  "#resume": "Resume builder",
+  "#interviews": "Interview preparation",
+  "#study-skills": "Study skills",
+  "#resources": "Resource library",
+  "#profile": "My information",
+  "#account": "Account settings",
+  "#privacy": "Privacy and my data",
+  "#recent-activity": "Recent activity",
+  "#progress-report": "Weekly progress report",
+};
 const inferCategory = (title: string) =>
   /FAFSA|financial aid/i.test(title)
     ? "FAFSA & Financial Aid"
@@ -2142,6 +2171,7 @@ function StudentDashboard({
   const [newCategory, setNewCategory] = useState("Path Planning");
   const [editing, setEditing] = useState<Step | null>(null);
   const [message, setMessage] = useState("");
+  const [lastSection, setLastSection] = useState("");
   useEffect(() => {
     supabase
       .from("student_steps")
@@ -2154,15 +2184,29 @@ function StudentDashboard({
   }, [session.user.id]);
   useEffect(() => {
     const remember = () => {
-      if (window.location.hash)
+      if (/^#[a-z0-9-]+$/i.test(window.location.hash)) {
         localStorage.setItem("future-waymark-last-section", window.location.hash);
+        setLastSection(window.location.hash);
+      }
     };
     window.addEventListener("hashchange", remember);
     const last = localStorage.getItem("future-waymark-last-section");
-    if (!window.location.hash && last)
-      requestAnimationFrame(() => document.querySelector(last)?.scrollIntoView());
+    if (!window.location.hash && last && /^#[a-z0-9-]+$/i.test(last))
+      setLastSection(last);
     return () => window.removeEventListener("hashchange", remember);
   }, []);
+  function continueWork() {
+    if (!lastSection) return;
+    document.querySelector(lastSection)?.scrollIntoView({ behavior: "smooth" });
+    window.history.replaceState(null, "", lastSection);
+  }
+  function startAtTop() {
+    localStorage.removeItem("future-waymark-last-section");
+    setLastSection("");
+    window.history.replaceState(null, "", window.location.pathname);
+    document.querySelector("#today")?.scrollIntoView({ behavior: "smooth" });
+  }
+  const lastSectionLabel = sectionLabels[lastSection] || "Your recent work";
   async function toggle(step: Step) {
     const completed = !step.completed;
     const { error } = await supabase
@@ -2306,6 +2350,19 @@ function StudentDashboard({
             Sign out
           </button>
         </header>
+        {lastSection && lastSection !== "#today" && (
+          <aside className="continue-work" aria-label="Continue your recent work">
+            <div>
+              <span className="kicker dark">PICK UP WHERE YOU LEFT OFF</span>
+              <b>{lastSectionLabel}</b>
+              <small>Your saved information stays in place.</small>
+            </div>
+            <div>
+              <button className="primary" onClick={continueWork}>Continue</button>
+              <button onClick={startAtTop}>Start at Today</button>
+            </div>
+          </aside>
+        )}
         <StudentCommandCenter userId={session.user.id} steps={steps} />
         <StudentNotifications userId={session.user.id} steps={steps} />
         <HelpCenter />
