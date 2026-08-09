@@ -2357,6 +2357,11 @@ function StudentDashboard({
             Sign out
           </button>
         </header>
+        <div className="student-toolbar" aria-label="Student tools">
+          <button onClick={() => document.querySelector<HTMLButtonElement>(".utility-launchers button:first-child")?.click()}>⌕ Search my work</button>
+          <button onClick={() => document.querySelector<HTMLButtonElement>(".utility-launchers button:nth-child(2)")?.click()}>? Help with terms</button>
+          <button onClick={() => document.querySelector<HTMLButtonElement>(".notification-tools .notification-bell")?.click()}>Updates</button>
+        </div>
         <nav className="section-jump" aria-label="Jump to a dashboard section">
           <label htmlFor="section-jump-select">Jump to</label>
           <select

@@ -1,8 +1,75 @@
-"use client";import{useEffect,useState}from"react";import{supabase}from"../lib/supabase";import{SchoolPicker}from"./school-picker";
-const tasks=[["account","StudentAid.gov account ready"],["contributors","Required contributors identified"],["documents","Information gathered securely offline"],["schools","Colleges added to FAFSA"],["review","Submission reviewed for accuracy"],["confirmation","Confirmation received"],["offers","Aid offers compared"]];type Plan={award_year:string;fafsa_status:string;started_on:string;submitted_on:string;contributors_status:string;checklist:Record<string,boolean>;notes:string};type Offer={id:string;school_name:string;deadline:string;status:string;grants:number;scholarships:number;work_study:number;loans:number;estimated_cost:number;notes:string};const emptyOffer=():Offer=>({id:"",school_name:"",deadline:"",status:"Waiting",grants:0,scholarships:0,work_study:0,loans:0,estimated_cost:0,notes:""});
-export function FinancialAidCenter({userId}:{userId:string}){const[plan,setPlan]=useState<Plan>({award_year:"",fafsa_status:"Not Started",started_on:"",submitted_on:"",contributors_status:"Not Started",checklist:{},notes:""}),[offers,setOffers]=useState<Offer[]>([]),[offer,setOffer]=useState<Offer>(emptyOffer()),[message,setMessage]=useState("");
-useEffect(()=>{Promise.all([supabase.from("financial_aid_plans").select("*").eq("user_id",userId).maybeSingle(),supabase.from("financial_aid_offers").select("*").eq("user_id",userId).order("deadline")]).then(([p,o])=>{if(p.data)setPlan({...p.data,started_on:p.data.started_on??"",submitted_on:p.data.submitted_on??""});setOffers((o.data??[])as Offer[])})},[userId]);
-async function savePlan(){const{error}=await supabase.from("financial_aid_plans").upsert({user_id:userId,...plan,started_on:plan.started_on||null,submitted_on:plan.submitted_on||null,updated_at:new Date().toISOString()},{onConflict:"user_id"});setMessage(error?error.message:"FAFSA plan saved privately.")}
-async function saveOffer(){if(!offer.school_name)return setMessage("Enter the school name.");const payload={user_id:userId,...offer,id:offer.id||undefined,deadline:offer.deadline||null,updated_at:new Date().toISOString()};const q=offer.id?supabase.from("financial_aid_offers").update(payload).eq("id",offer.id):supabase.from("financial_aid_offers").insert(payload);const{data,error}=await q.select().single();if(error)return setMessage(error.message);const saved=data as Offer;setOffers(offer.id?offers.map(x=>x.id===saved.id?saved:x):[saved,...offers]);setOffer(saved);setMessage("Aid offer saved.")}
-async function remove(){if(!offer.id)return;await supabase.from("financial_aid_offers").delete().eq("id",offer.id);setOffers(offers.filter(x=>x.id!==offer.id));setOffer(emptyOffer())}
-const update=(p:Partial<Offer>)=>setOffer({...offer,...p}),total=offer.grants+offer.scholarships+offer.work_study+offer.loans,net=Math.max(0,offer.estimated_cost-total);return <section className="aid-center" id="financial-aid"><div className="aid-heading"><div><span className="kicker dark">FAFSA & FINANCIAL AID CENTER</span><h2>Stay organized without storing sensitive data.</h2><p>Track progress and compare offers. Always confirm requirements at StudentAid.gov and each college.</p></div><button className="primary" onClick={savePlan}>Save FAFSA plan</button></div><div className="privacy-warning"><b>Protect your identity.</b> Never enter Social Security numbers, FSA ID passwords, tax documents, bank details, or verification codes in Future Waymark.</div><div className="aid-plan"><div className="two-col"><label>Award year<input value={plan.award_year} onChange={e=>setPlan({...plan,award_year:e.target.value})} placeholder="2026–27"/></label><label>FAFSA status<select value={plan.fafsa_status} onChange={e=>setPlan({...plan,fafsa_status:e.target.value})}>{["Not Started","Preparing","Submitted","Processed","Corrections Needed","Complete"].map(x=><option key={x}>{x}</option>)}</select></label><label>Date started<input type="date" value={plan.started_on} onChange={e=>setPlan({...plan,started_on:e.target.value})}/></label><label>Date submitted<input type="date" value={plan.submitted_on} onChange={e=>setPlan({...plan,submitted_on:e.target.value})}/></label><label>Contributor progress<select value={plan.contributors_status} onChange={e=>setPlan({...plan,contributors_status:e.target.value})}><option>Not Started</option><option>Invited</option><option>In Progress</option><option>Complete</option><option>Not Applicable</option></select></label></div><div className="aid-checklist">{tasks.map(([k,l])=><label key={k}><input type="checkbox" checked={!!plan.checklist[k]} onChange={e=>setPlan({...plan,checklist:{...plan.checklist,[k]:e.target.checked}})}/>{l}</label>)}</div><label>General notes<textarea value={plan.notes} onChange={e=>setPlan({...plan,notes:e.target.value})}/></label></div><div className="offer-layout"><aside><button onClick={()=>setOffer(emptyOffer())}>+ Add school offer</button>{offers.map(x=><button key={x.id} onClick={()=>setOffer(x)}><b>{x.school_name}</b><span>{x.status}</span></button>)}</aside><div className="offer-editor"><div className="two-col"><SchoolPicker value={offer.school_name?[offer.school_name]:[]} onChange={schools=>update({school_name:schools.at(-1)??""})}/><label>Aid deadline<input type="date" value={offer.deadline??""} onChange={e=>update({deadline:e.target.value})}/></label><label>Status<select value={offer.status} onChange={e=>update({status:e.target.value})}><option>Waiting</option><option>Received</option><option>Appeal Planned</option><option>Accepted</option><option>Declined</option></select></label>{(["estimated_cost","grants","scholarships","work_study","loans"]as const).map(k=><label key={k}>{k.replace("_"," ")}<input type="number" min="0" value={offer[k]} onChange={e=>update({[k]:Number(e.target.value)})}/></label>)}</div><div className="aid-total"><span>Total listed aid <b>${total.toLocaleString()}</b></span><span>Estimated remaining cost <b>${net.toLocaleString()}</b></span></div><label>Notes<textarea value={offer.notes} onChange={e=>update({notes:e.target.value})}/></label><div><button className="danger" disabled={!offer.id} onClick={remove}>Delete</button><button className="primary" onClick={saveOffer}>Save offer</button></div></div></div>{message&&<div className="form-message">{message}</div>}</section>}
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "../lib/supabase";
+import { SchoolPicker } from "./school-picker";
+
+const tasks = [["account", "StudentAid.gov account ready"], ["contributors", "Required contributors identified"], ["documents", "Information gathered securely offline"], ["schools", "Colleges added to FAFSA"], ["review", "Submission reviewed for accuracy"], ["confirmation", "Confirmation received"], ["offers", "Aid offers compared"]];
+type Plan = { award_year:string; fafsa_status:string; started_on:string; submitted_on:string; contributors_status:string; checklist:Record<string,boolean>; notes:string };
+type Offer = { id:string; school_name:string; deadline:string; status:string; grants:number; scholarships:number; work_study:number; loans:number; estimated_cost:number; notes:string };
+const emptyOffer = ():Offer => ({ id:"", school_name:"", deadline:"", status:"Waiting", grants:0, scholarships:0, work_study:0, loans:0, estimated_cost:0, notes:"" });
+
+export function FinancialAidCenter({ userId }:{ userId:string }) {
+  const [plan,setPlan] = useState<Plan>({ award_year:"", fafsa_status:"Not Started", started_on:"", submitted_on:"", contributors_status:"Not Started", checklist:{}, notes:"" });
+  const [offers,setOffers] = useState<Offer[]>([]);
+  const [offer,setOffer] = useState<Offer>(emptyOffer());
+  const [message,setMessage] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from("financial_aid_plans").select("*").eq("user_id",userId).maybeSingle(),
+      supabase.from("financial_aid_offers").select("*").eq("user_id",userId).order("deadline"),
+    ]).then(([p,o]) => {
+      if (p.data) setPlan({ ...p.data, started_on:p.data.started_on??"", submitted_on:p.data.submitted_on??"" });
+      setOffers((o.data??[]) as Offer[]);
+    });
+  },[userId]);
+
+  async function savePlan() {
+    const { error } = await supabase.from("financial_aid_plans").upsert({ user_id:userId, ...plan, started_on:plan.started_on||null, submitted_on:plan.submitted_on||null, updated_at:new Date().toISOString() },{ onConflict:"user_id" });
+    setMessage(error ? error.message : "FAFSA plan saved privately.");
+  }
+  function openEditor(next:Offer, notice:string) {
+    setOffer(next);
+    setMessage(notice);
+    requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior:"smooth", block:"center" });
+      editorRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+    });
+  }
+  async function saveOffer() {
+    if (!offer.school_name) {
+      setMessage("Search for and select a school before saving the offer.");
+      editorRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+      return;
+    }
+    const payload = { user_id:userId, ...offer, id:offer.id||undefined, deadline:offer.deadline||null, updated_at:new Date().toISOString() };
+    const q = offer.id ? supabase.from("financial_aid_offers").update(payload).eq("id",offer.id) : supabase.from("financial_aid_offers").insert(payload);
+    const { data,error } = await q.select().single();
+    if (error) return setMessage(error.message);
+    const saved = data as Offer;
+    setOffers(offer.id ? offers.map(x => x.id===saved.id?saved:x) : [saved,...offers]);
+    setOffer(saved);
+    setMessage("Aid offer saved.");
+  }
+  async function remove() {
+    if (!offer.id) return;
+    const { error } = await supabase.from("financial_aid_offers").delete().eq("id",offer.id);
+    if (error) return setMessage(error.message);
+    setOffers(offers.filter(x => x.id!==offer.id));
+    setOffer(emptyOffer());
+    setMessage("Aid offer removed.");
+  }
+  const update = (p:Partial<Offer>) => setOffer({ ...offer,...p });
+  const total = offer.grants+offer.scholarships+offer.work_study+offer.loans;
+  const net = Math.max(0,offer.estimated_cost-total);
+
+  return <section className="aid-center" id="financial-aid">
+    <div className="aid-heading"><div><span className="kicker dark">FAFSA & FINANCIAL AID CENTER</span><h2>Stay organized without storing sensitive data.</h2><p>Track progress and compare offers. Always confirm requirements at StudentAid.gov and each college.</p></div><button className="primary" onClick={savePlan}>Save FAFSA plan</button></div>
+    <div className="privacy-warning"><b>Protect your identity.</b> Never enter Social Security numbers, FSA ID passwords, tax documents, bank details, or verification codes in Future Waymark.</div>
+    <div className="aid-plan"><div className="two-col"><label>Award year<input value={plan.award_year} onChange={e=>setPlan({...plan,award_year:e.target.value})} placeholder="2026–27"/></label><label>FAFSA status<select value={plan.fafsa_status} onChange={e=>setPlan({...plan,fafsa_status:e.target.value})}>{["Not Started","Preparing","Submitted","Processed","Corrections Needed","Complete"].map(x=><option key={x}>{x}</option>)}</select></label><label>Date started<input type="date" value={plan.started_on} onChange={e=>setPlan({...plan,started_on:e.target.value})}/></label><label>Date submitted<input type="date" value={plan.submitted_on} onChange={e=>setPlan({...plan,submitted_on:e.target.value})}/></label><label>Contributor progress<select value={plan.contributors_status} onChange={e=>setPlan({...plan,contributors_status:e.target.value})}><option>Not Started</option><option>Invited</option><option>In Progress</option><option>Complete</option><option>Not Applicable</option></select></label></div><div className="aid-checklist">{tasks.map(([k,l])=><label key={k}><input type="checkbox" checked={!!plan.checklist[k]} onChange={e=>setPlan({...plan,checklist:{...plan.checklist,[k]:e.target.checked}})}/>{l}</label>)}</div><label>General notes<textarea value={plan.notes} onChange={e=>setPlan({...plan,notes:e.target.value})}/></label></div>
+    <div className="offer-layout"><aside><button onClick={()=>openEditor(emptyOffer(),"New school-offer form opened. Search for a school, then enter the offer details.")}>+ Add school offer</button>{offers.map(x=><button key={x.id} onClick={()=>openEditor(x,`Editing the saved offer for ${x.school_name}.`)}><b>{x.school_name}</b><span>{x.status}</span></button>)}</aside><div className="offer-editor" ref={editorRef} tabIndex={-1}><h3>{offer.id ? `Edit ${offer.school_name} offer` : "Add a school financial-aid offer"}</h3><p>Search for the school, then enter the amounts shown on its official aid offer.</p><div className="two-col"><SchoolPicker value={offer.school_name?[offer.school_name]:[]} onChange={schools=>update({school_name:schools.at(-1)??""})}/><label>Aid deadline<input type="date" value={offer.deadline??""} onChange={e=>update({deadline:e.target.value})}/></label><label>Status<select value={offer.status} onChange={e=>update({status:e.target.value})}><option>Waiting</option><option>Received</option><option>Appeal Planned</option><option>Accepted</option><option>Declined</option></select></label>{(["estimated_cost","grants","scholarships","work_study","loans"] as const).map(k=><label key={k}>{k.replaceAll("_"," ")}<input type="number" min="0" value={offer[k]} onChange={e=>update({[k]:Number(e.target.value)})}/></label>)}</div><div className="aid-total"><span>Total listed aid <b>${total.toLocaleString()}</b></span><span>Estimated remaining cost <b>${net.toLocaleString()}</b></span></div><label>Notes<textarea value={offer.notes} onChange={e=>update({notes:e.target.value})}/></label><div><button className="danger" disabled={!offer.id} onClick={remove}>Delete</button><button className="primary" onClick={saveOffer}>Save offer</button></div></div></div>
+    {message&&<div className="form-message" role="status">{message}</div>}
+  </section>;
+}
