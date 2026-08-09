@@ -21,6 +21,7 @@ import { StudentNotifications } from "./student-notifications";
 import { AdvisorBrief } from "./advisor-brief";
 import { CollegeDecisionWorkspace } from "./college-decision-workspace";
 import { SupportNetwork } from "./support-network";
+import { RecentActivity } from "./recent-activity";
 
 type Resource = {
   id: number;
@@ -2264,6 +2265,7 @@ function StudentDashboard({
             <a href="#profile">My information</a>
             <a href="#account">Account settings</a>
             <a href="#privacy">Privacy and my data</a>
+            <a href="#recent-activity">Recent activity</a>
           </details>
         </nav>
         <div className="sidebar-note">
@@ -2296,6 +2298,7 @@ function StudentDashboard({
         </header>
         <StudentCommandCenter userId={session.user.id} steps={steps} />
         <StudentNotifications userId={session.user.id} steps={steps} />
+        <RecentActivity userId={session.user.id} />
         <GuidedProgress
           userId={session.user.id}
           hasProfile={Boolean(profile.first_name && profile.graduation_year)}
