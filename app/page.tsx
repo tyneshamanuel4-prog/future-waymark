@@ -19,6 +19,7 @@ import { PlanningAssistant } from "./planning-assistant";
 import { GuidedProgress } from "./guided-progress";
 import { StudentNotifications } from "./student-notifications";
 import { AdvisorBrief } from "./advisor-brief";
+import { CollegeDecisionWorkspace } from "./college-decision-workspace";
 
 type Resource = {
   id: number;
@@ -1720,6 +1721,7 @@ function AccountSettings({ session }: { session: Session }) {
       <ApplicationTracker userId={session.user.id} />
       <RecommendationCenter userId={session.user.id} />
       <FinancialAidCenter userId={session.user.id} />
+      <CollegeDecisionWorkspace userId={session.user.id} />
       <CollegeVisitCenter userId={session.user.id} />
       <StudyCenter userId={session.user.id} />
       <section className="account-settings" id="account">
@@ -2242,6 +2244,7 @@ function StudentDashboard({
             <a href="#applications">Applications and scholarships</a>
             <a href="#recommendations">Recommendations</a>
             <a href="#financial-aid">Financial aid</a>
+            <a href="#college-decisions">College decisions</a>
             <a href="#college-visits">College visits</a>
           </details>
           <details>
