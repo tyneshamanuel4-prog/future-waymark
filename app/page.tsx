@@ -23,6 +23,7 @@ import { CollegeDecisionWorkspace } from "./college-decision-workspace";
 import { SupportNetwork } from "./support-network";
 import { RecentActivity } from "./recent-activity";
 import { HelpCenter } from "./help-center";
+import { DeadlineLoadCheck } from "./deadline-load-check";
 
 type Resource = {
   id: number;
@@ -2239,6 +2240,7 @@ function StudentDashboard({
             <a href="#path">My path</a>
             <a href="#deadlines">All deadlines</a>
             <a href="#planning-assistant">Calendar and documents</a>
+            <a href="#deadline-load">Deadline load check</a>
             <a href="#school-research">Schools and comparisons</a>
             <a href="#school-workspaces">School workspaces</a>
             <a href="#advisor-brief">Advisor meeting brief</a>
@@ -2315,6 +2317,7 @@ function StudentDashboard({
           steps={steps}
         />
         <PlanningAssistant userId={session.user.id} />
+        <DeadlineLoadCheck userId={session.user.id} />
         {reminders.length > 0 && (
           <div className="reminder-banner">
             <b>
