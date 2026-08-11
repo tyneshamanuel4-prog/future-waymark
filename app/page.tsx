@@ -27,6 +27,7 @@ import { DeadlineLoadCheck } from "./deadline-load-check";
 import { BackwardPlanner } from "./backward-planner";
 import { SubmissionCheckpoints } from "./submission-checkpoints";
 import { ProgressReport } from "./progress-report";
+import { VideoLearningCenter } from "./video-learning-center";
 
 type Resource = {
   id: number;
@@ -190,6 +191,7 @@ const sectionLabels: Record<string, string> = {
   "#interviews": "Interview preparation",
   "#study-skills": "Study skills",
   "#resources": "Resource library",
+  "#videos": "Video learning center",
   "#profile": "My information",
   "#account": "Account settings",
   "#privacy": "Privacy and my data",
@@ -2322,6 +2324,7 @@ function StudentDashboard({
           <details>
             <summary>Library and account</summary>
             <a href="#resources">Resources</a>
+            <a href="#videos">Video learning</a>
             <a href="#profile">My information</a>
             <a href="#account">Account settings</a>
             <a href="#privacy">Privacy and my data</a>
@@ -2397,6 +2400,7 @@ function StudentDashboard({
             </optgroup>
             <optgroup label="Library and account">
               <option value="#resources">Resource library</option>
+              <option value="#videos">Video learning center</option>
               <option value="#profile">My information</option>
               <option value="#account">Account settings</option>
               <option value="#privacy">Privacy and my data</option>
@@ -2620,6 +2624,7 @@ function StudentDashboard({
       />
       <AccountSettings session={session} />
         <ResourceLibrary userId={session.user.id} />
+        <VideoLearningCenter userId={session.user.id} />
       </section>
       {editing && (
         <MilestoneEditor
